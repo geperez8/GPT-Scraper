@@ -2,18 +2,19 @@
 # Selenium base API for reference: https://seleniumbase.io/help_docs/method_summary/#seleniumbase-methods-api-reference
 
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from time import sleep
-import requests
 import json
 import pandas as pd
 from seleniumbase import Driver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-import hashlib
-import poplib
-from email import parser
-from newspaper import Article
+from bs4 import BeautifulSoup
+
+def pretty_html(html_str):
+    soup = BeautifulSoup(html_str, "html.parser")
+    print(soup.prettify())
+
 
 # Base class for scraping - The ChatGPT and Perplexity Scrapers will inherit from this class
 class BaseScraper:
@@ -23,26 +24,34 @@ class BaseScraper:
         #self.driver.maximize_window()
         self.driver.set_window_size(1400, 1400)
 
+    # Destructor to close the driver when the object is deleted
     def __del__(self):
         if self.driver:
             self.driver.quit()
 
+    # This is a placeholder for thefunction that will provide a query to the model
     def query(self, query):
         return None
 
+    # This is a placeholder for the function that will scrape the data from the model
     def scrape(self):
         return None
 
+    # Destructor to close the driver when the object is deleted
     def close(self):
         if self.driver:
             self.driver.quit()
 
 
 class ChatGPTScraper(BaseScraper):
+
+    # Constructor for the ChatGPT scraper
     def __init__(self):
+        # Initialize the base class
         super().__init__()
+
+        # Set the URL for the ChatGPT model interface
         self.url = "https://chatgpt.com/"
-        
 
     # Prep the dataframe by adding the columns that will store the scraped data
     def prep_data(self, df):
@@ -51,19 +60,32 @@ class ChatGPTScraper(BaseScraper):
         # Response_text is the response from the model
         # Response_citations is a JSON of the citations that the model cited in the response
         # Response_search_results is a JSON of the search results that the model cited in the response
+        # ? Screenshot_path is the path to the screenshot of the response
         df[["prompt", "response_text", "response_citations", "response_search_results", "screenshot_path", "request_time"]] = None
         return df
         
     # Query the ChatGPT model with a prompt
     def query(self, query):
         try:
+            # open the ChatGPT model interface
             self.driver.uc_open(self.url)
+            # wait for the page to load/human interaction simulation
             sleep(random.uniform(1, 2))
+
+            # Populate the prompt text area with the query
             self.driver.send_keys("#prompt-textarea", query)
+            # wait for the page to load/human interaction simulation
             sleep(random.uniform(1, 3))
+
+            # log the time the request was made
             request_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Click the submit button to send the query
             self.driver.send_keys("#prompt-textarea", Keys.ENTER)
+            # wait for the page to load/human interaction simulation
             sleep(random.uniform(20, 25))
+
+            #return the request time
             return request_time
             #sources_button = self.driver.find_element(By.CSS_SELECTOR, ".not-prose")
             
@@ -75,12 +97,17 @@ class ChatGPTScraper(BaseScraper):
     # Collect the data from the ChatGPT model for one row of the input data frame this is applied to
     def scrape(self, row):
         #add a delay here so we don't hit the gpt-4o limit of 80 messages / 3 hrs. 
+        # ! Only comment outif we aretesting out a single prompt
         sleep(random.uniform(110, 130))
         
         try:
             # Send the prompt to ChatGPT
+
+            # Create prompt
             PROMPT = f'Tell me about "{row["headline"]}"'
-            print (PROMPT)
+            print(PROMPT)
+
+            # log request time and prompt
             row["request_time"] = self.query(PROMPT)
             row["prompt"] = PROMPT
 
@@ -94,9 +121,11 @@ class ChatGPTScraper(BaseScraper):
 
             # And then extract all of the source information broken into citations and search results
             try:
+                # Get the citations and search results from the sources tab
                 citations = self.parse_sources("Citations")
                 row["response_citations"] = json.dumps(citations)
                 
+                # Get the additional search results from the sources tab
                 search_results = self.parse_sources("More")
                 row["response_search_results"] = json.dumps(search_results)
             except Exception as e:
@@ -110,9 +139,12 @@ class ChatGPTScraper(BaseScraper):
         return row
     
     # Helper to extract the response from the ChatGPT model
+    # gets all the HTML from the response area and returns it as a string
     def parse_response(self):
+        # get the HTML of the response area
         response = self.driver.find_element(By.CSS_SELECTOR, ".markdown.prose").get_attribute("innerHTML")
 
+        # return the response HTML as a string
         return response
     
     # Helper to extract the sources from the ChatGPT model
@@ -121,24 +153,36 @@ class ChatGPTScraper(BaseScraper):
 
         # Find the section based on the header text
         header_element = self.driver.find_element(By.XPATH, f"//div[text()='{header_text}']")
+
+        # Get the parent section of the header element
         section = header_element.find_element(By.XPATH, "..")
+
+        # Get all the links in the section
         links = section.find_elements(By.TAG_NAME, "a")
-        
+
+        # Iterate through the links and extract the URL and text
         for link in links:
+            # Get the URL and remove the tracking parameter
             url = link.get_attribute("href")
             url = url.replace("?utm_source=chatgpt.com", "")
+
+            # Get the text elements within the link
             text_elements = link.find_elements(By.TAG_NAME, "div")
+            
+            # extract the headline and snippet from the text elements
             headline = text_elements[1].text
             snippet = text_elements[2].text
-            # Extract the date (assumes the date is the first part of the snippet)
-            #date = snippet.split(" — ")[0] if " — " in snippet else ""
-            #remaining_snippet = snippet[len(date) + 3:] if date else snippet
+
+            # compile the results into a dictionary
             results.append({
                 "url": url,
                 "headline": headline,
                 "snippet": snippet,
             })
+        
+        # return the dictionary of compiled results
         return results
+
 
 
 
@@ -146,6 +190,7 @@ class ChatGPTScraper(BaseScraper):
 # Demo function to show how to instantiate and use the ChatGPTScraper.
 def ChatGPTScraperTest():
     # Create a test dataframe -- just need a column a headlines for the prompt pattern used here
+    # ? What headlines will we use?
     headlines = ["Judge orders Trump administration to preserve Signal communications about Yemen operation"]
     df = pd.DataFrame(headlines, columns=["headline"])
 
@@ -158,10 +203,12 @@ def ChatGPTScraperTest():
     # Call the scraper on each row of the dataframe
     df = df.apply(scraper.scrape, axis=1)
 
-    # Close the scraper
+    # # Close the scraper
     scraper.close()
 
     # Output the results to a CSV file with the new columns
+    # ? Single csv vs multiple csvs?
+    # ? What should the name be?
     df.to_csv("test-scrape.csv", index=False)
 
 ChatGPTScraperTest()
