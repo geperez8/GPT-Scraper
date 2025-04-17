@@ -2,6 +2,7 @@ from newsapi import NewsApiClient
 from dotenv import load_dotenv
 import json
 import os
+from pygooglenews import GoogleNews
 import urllib.request
 
 load_dotenv()
@@ -52,3 +53,31 @@ def newsapi_get_headlines():
     
     return headlines
 
+
+def pygooglenews_get_headlines():
+    # Initialize GoogleNews object
+    gn = GoogleNews(lang='en', country='US')
+
+    goole_news_topics = ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH',]
+
+    headlines = gn.topic_headlines('BUSINESS', proxies=None, scraping_bee = None)
+
+    # Extract titles from the articles
+    titles = []
+    for article in headlines['entries']:
+        title = article.title
+
+        # remove source from title
+        if ' - ' in title:
+            # Split the title at the first occurrence of '-'
+            split_title = title.split(' - ')
+            
+            # remove the last value in array
+            split_title.pop(-1)
+
+            # Join the remaining parts back into a string
+            title = '-'.join(split_title)
+        
+        titles.append(title)
+    
+    return titles
