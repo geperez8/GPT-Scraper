@@ -97,7 +97,7 @@ class ChatGPTScraper(BaseScraper):
     # Collect the data from the ChatGPT model for one row of the input data frame this is applied to
     def scrape(self, row):
         #add a delay here so we don't hit the gpt-4o limit of 80 messages / 3 hrs. 
-        # ! Only comment outif we aretesting out a single prompt
+        # ! Only comment out if we are testing out a single prompt
         sleep(random.uniform(110, 130))
         
         try:
@@ -191,7 +191,7 @@ class ChatGPTScraper(BaseScraper):
 def ChatGPTScraperTest():
     # Create a test dataframe -- just need a column a headlines for the prompt pattern used here
     # ? What headlines will we use?
-    headlines = ["Judge orders Trump administration to preserve Signal communications about Yemen operation"]
+    headlines = ["3 arrested as protestors disrupt Marjorie Taylor Greene town hall - WSB-TV"]
     df = pd.DataFrame(headlines, columns=["headline"])
 
     # Create a scraper instance
