@@ -1,7 +1,12 @@
+from newsapi import NewsApiClient
 from dotenv import load_dotenv
 import json
 import os
 import urllib.request
+
+load_dotenv()
+
+
 def gnews_get_headlines():
     apikey = os.getenv("GNEWS_API_KEY")
     gnews_categories = ['general', 'world', 'nation', 'business', 'technology', 'entertainment', 'sports', 'science', 'health']
@@ -23,3 +28,27 @@ def gnews_get_headlines():
             # print(f"{articles[i]['{property}']}")
 
 gnews_get_headlines()
+
+# Function for getting headlines
+def newsapi_get_headlines():
+    # get API key from environment variable
+    API_KEY = os.getenv("NEWS_API_KEY")
+
+    # Init
+    newsapi = NewsApiClient(api_key=API_KEY)
+
+    news_api_categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
+
+    # get top headlines
+    top_headlines = newsapi.get_top_headlines(language='en',
+                                              category='business',
+                                              country='us')
+    
+    headlines = []
+
+    # Loop through the articles and get the title of each one
+    for article in top_headlines['articles']:
+        headlines.append(article['title'])
+    
+    return headlines
+
