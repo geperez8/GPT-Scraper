@@ -10,7 +10,7 @@ load_dotenv()
 
 def gnews_get_headlines():
     apikey = os.getenv("GNEWS_API_KEY")
-    gnews_categories = ['general', 'world', 'nation', 'business', 'technology', 'entertainment', 'sports', 'science', 'health']
+    gnews_categories = ['general', 'world', 'nation', 'business', 'technology', 'entertainment', 'sports', 'science', 'health'] # adds general
     category = gnews_categories[2]
     url = f"https://gnews.io/api/v4/top-headlines?category={category}&lang=en&country=us&max=10&apikey={apikey}"
 
@@ -38,7 +38,7 @@ def newsapi_get_headlines():
     # Init
     newsapi = NewsApiClient(api_key=API_KEY)
 
-    news_api_categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
+    news_api_categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'] # missing world and nation
 
     # get top headlines
     top_headlines = newsapi.get_top_headlines(language='en',
@@ -58,7 +58,7 @@ def pygooglenews_get_headlines():
     # Initialize GoogleNews object
     gn = GoogleNews(lang='en', country='US')
 
-    goole_news_topics = ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH',]
+    goole_news_topics = ['WORLD', 'NATION', 'BUSINESS', 'TECHNOLOGY', 'ENTERTAINMENT', 'SCIENCE', 'SPORTS', 'HEALTH',] # missing general
 
     headlines = gn.topic_headlines('BUSINESS', proxies=None, scraping_bee = None)
 
