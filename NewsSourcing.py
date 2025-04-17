@@ -11,24 +11,24 @@ load_dotenv()
 def gnews_get_headlines():
     apikey = os.getenv("GNEWS_API_KEY")
     gnews_categories = ['general', 'world', 'nation', 'business', 'technology', 'entertainment', 'sports', 'science', 'health']
-    category = categories[2]  # Change this to the desired category
+    category = gnews_categories[2]
     url = f"https://gnews.io/api/v4/top-headlines?category={category}&lang=en&country=us&max=10&apikey={apikey}"
 
     with urllib.request.urlopen(url) as response:
         data = json.loads(response.read().decode("utf-8"))
-        print(json.dumps(data['articles'], indent=4))
         articles = data["articles"]
 
-        for i in range(len(articles)):
-            # articles[i].title
-            print(f"Title: {articles[i]['title']}")
-            # articles[i].description
-            print(f"Description: {articles[i]['description']}")
-            # You can replace {property} below with any of the article properties returned by the API.
-            # articles[i].{property}
-            # print(f"{articles[i]['{property}']}")
+        headlines = []
 
-gnews_get_headlines()
+        for i in range(len(articles)):
+            curr_article = articles[i]
+            
+            # add title to headlines
+            headlines.append(curr_article["title"])
+        
+        return headlines
+
+print(gnews_get_headlines())
 
 # Function for getting headlines
 def newsapi_get_headlines():
