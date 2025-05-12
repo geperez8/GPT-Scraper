@@ -108,7 +108,16 @@ class ChatGPTScraper(BaseScraper):
             # open the ChatGPT model interface
             self.driver.uc_open(self.url)
             # wait for the page to load/human interaction simulation
-            sleep(random.uniform(1, 2))
+            sleep(random.uniform(1, 6))
+
+            # get rid of the popups that appear on the page
+            self.get_rid_of_popup()
+
+            # click on the "web search" button to enable web search
+            self.driver.click("button[aria-label='Search']", by="css selector")
+
+            # wait for the page to load/human interaction simulation
+            sleep(random.uniform(1, 4))
 
             # Populate the prompt text area with the query
             self.driver.send_keys("#prompt-textarea", query)
@@ -188,6 +197,15 @@ class ChatGPTScraper(BaseScraper):
         # return the response HTML as a string
         return response
     
+    # this is a helper function to close the popups that appear on the page
+    def get_rid_of_popup(self):
+        # Close the popups that appear on the page
+        try:
+            self.driver.click("button[aria-label='Close']", by="css selector")
+            sleep(random.uniform(1, 2))
+        except Exception as e:
+            print(f"Pop up not found: \n{e}")
+
     # Helper to extract the sources from the ChatGPT model
     def parse_sources(self, header_text):
         results = []
