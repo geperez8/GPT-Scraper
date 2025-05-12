@@ -166,6 +166,9 @@ class ChatGPTScraper(BaseScraper):
             self.driver.uc_click("button.not-prose.group\\/footnote")
             #self.driver.click("//div[text()='Sources']/parent::button", by="xpath")
             sleep(random.uniform(3, 5))
+            
+            # take a screen shot of the sources tab
+            self.driver.save_screenshot('sources.png')
 
             # And then extract all of the source information broken into citations and search results
             try:
