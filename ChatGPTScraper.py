@@ -9,7 +9,28 @@ import pandas as pd
 from seleniumbase import Driver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import feedparser
+import os
+
+load_dotenv()
+
+def get_google_trends_topics():
+    # Parse the RSS feed from Google Trends
+    # The URL is for US trends; you can change the 'geo' parameter for other countries
+    rss_url = "https://trends.google.com/trending/rss?geo=US"
+    feed = feedparser.parse(rss_url)
+
+    topics= []
+
+    for entry in feed.entries:
+        # Extract the title/topic and add it to the list
+        topics.append(entry.title)
+
+    return topics
 
 def pretty_html(html_str):
     soup = BeautifulSoup(html_str, "html.parser")
@@ -113,6 +134,9 @@ class ChatGPTScraper(BaseScraper):
 
             # Extract the response HTML
             row["response_text"] = self.parse_response()
+
+            # take a screenshot of the response area
+            self.driver.save_screenshot('response.png')
             
             # Open sources tab
             self.driver.uc_click("button.not-prose.group\\/footnote")
@@ -190,9 +214,10 @@ class ChatGPTScraper(BaseScraper):
 # Demo function to show how to instantiate and use the ChatGPTScraper.
 def ChatGPTScraperTest():
     # Create a test dataframe -- just need a column a headlines for the prompt pattern used here
-    # ? What headlines will we use?
-    headlines = ["3 arrested as protestors disrupt Marjorie Taylor Greene town hall - WSB-TV"]
-    df = pd.DataFrame(headlines, columns=["headline"])
+    # What headlines will we use? -> We are using trending topics from Google Trends
+    # Get trending topics from Google Trends
+    topics = get_google_trends_topics()
+    df = pd.DataFrame(topics, columns=["headline"])
 
     # Create a scraper instance
     scraper = ChatGPTScraper()
