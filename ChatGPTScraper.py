@@ -143,15 +143,13 @@ class ChatGPTScraper(BaseScraper):
 
     # Collect the data from the ChatGPT model for one row of the input data frame this is applied to
     def scrape(self, row):
-        #add a delay here so we don't hit the gpt-4o limit of 80 messages / 3 hrs. 
-        # ! Only comment out if we are testing out a single prompt
+        # add a delay here so we don't hit the gpt-4o limit of 80 messages / 3 hrs. 
         sleep(random.uniform(110, 130))
         
         try:
             # Send the prompt to ChatGPT
-
             # Create prompt
-            PROMPT = f'Tell me about "{row["headline"]}"'
+            PROMPT = f'What does the internet say about {row["headline"]} in the past week. '
             print(PROMPT)
 
             # log request time and prompt
