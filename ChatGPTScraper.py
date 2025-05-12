@@ -36,6 +36,23 @@ def pretty_html(html_str):
     soup = BeautifulSoup(html_str, "html.parser")
     print(soup.prettify())
 
+def create_date_folder():
+    # Get current date in YYYY-MM-DD format
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    # Create the folder name using the date
+    folder_name = current_date
+    
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+        # Create subfolders for images and CSV files
+        os.makedirs(os.path.join(folder_name, "images"))
+        os.makedirs(os.path.join(folder_name, "csv_files"))
+        print(f"Created folder structure: {folder_name}/images and {folder_name}/csv_files")
+    
+    return folder_name
+
 
 # Base class for scraping - The ChatGPT and Perplexity Scrapers will inherit from this class
 class BaseScraper:
