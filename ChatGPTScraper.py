@@ -58,7 +58,7 @@ def create_date_folder():
 class BaseScraper:
     def __init__(self):
         # Set headless=False for debug so you can see what's happening in the browser, or headless=True to run it on a server
-        self.driver = Driver(uc=True, headless=False)
+        self.driver = Driver(uc=True, headless=False, no_sandbox=True)
         #self.driver.maximize_window()
         self.driver.set_window_size(1400, 1400)
 
