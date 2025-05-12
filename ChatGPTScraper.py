@@ -241,10 +241,67 @@ class ChatGPTScraper(BaseScraper):
         
         # return the dictionary of compiled results
         return results
+    
+    def login(self, email, password):
+        try:
+            # Navigate to the mian page
+            self.driver.uc_open(self.url)
 
+            # wait for page to load/human interaction simulation
+            sleep(random.uniform(1, 3))
 
+            # Click on login button
+            button = self.driver.find_element(By.CSS_SELECTOR, "button.btn.relative.btn-primary.btn-large.w-full")
+            button.click()
 
+            # wait for page to load/human interaction simulation
+            sleep(random.uniform(20, 30))
+            
+            # Find the email input field by its ID
+            email_input = self.driver.find_element(By.CSS_SELECTOR, "input[name='email'][type='email']")
 
+            # Clear any existing text in the field
+            email_input.clear()
+
+            # Type text into the field
+            email_input.send_keys(email)
+
+            # wait for page to load/human interaction simulation
+            sleep(random.uniform(1, 3))
+
+            #Find the continue button and click it
+            button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']"))
+            )
+            button.click()
+            
+            # wait for page to load/human interaction simulation
+            sleep(random.uniform(1, 3))
+
+            # Find the email input field by its ID
+            password_input = self.driver.find_element(By.CSS_SELECTOR, "input[name='password'][type='password']")
+
+            # Clear any existing text in the field
+            password_input.clear()
+
+            # Type text into the field
+            password_input.send_keys(password)
+
+            # wait for page to load/human interaction simulation
+            sleep(random.uniform(3, 8))
+
+            #Find the continue button and click it
+            button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[text()='Continue']"))
+            )
+            button.click()
+
+            # We have now successfully logged in
+            return True
+        
+        except Exception as e:
+            print(f"Login failed: {e}")
+            return False
 
 # Demo function to show how to instantiate and use the ChatGPTScraper.
 def ChatGPTScraperTest():
