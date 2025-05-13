@@ -11,8 +11,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+import uuid
 import feedparser
 import os
 
@@ -32,26 +32,21 @@ def get_google_trends_topics():
 
     return topics
 
-def pretty_html(html_str):
-    soup = BeautifulSoup(html_str, "html.parser")
-    print(soup.prettify())
-
 def create_date_folder():
     # Get current date in YYYY-MM-DD format
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_date = datetime.now().strftime("%m-%d-%Y")
     
     # Create the folder name using the date
-    folder_name = current_date
+    folder_path = os.path.join("data", current_date)
     
     # Create the folder if it doesn't exist
-    if not os.path.exists(folder_name):
-        os.makedirs(folder_name)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
         # Create subfolders for images and CSV files
-        os.makedirs(os.path.join(folder_name, "images"))
-        os.makedirs(os.path.join(folder_name, "csv_files"))
-        print(f"Created folder structure: {folder_name}/images and {folder_name}/csv_files")
+        os.makedirs(os.path.join(folder_path, "screenshots"))
+        print(f"Created folder structure: {folder_path}/screenshots")
     
-    return folder_name
+    return folder_path, current_date
 
 
 # Base class for scraping - The ChatGPT and Perplexity Scrapers will inherit from this class
@@ -84,12 +79,13 @@ class BaseScraper:
 class ChatGPTScraper(BaseScraper):
 
     # Constructor for the ChatGPT scraper
-    def __init__(self):
+    def __init__(self, date_folder):
         # Initialize the base class
         super().__init__()
 
         # Set the URL for the ChatGPT model interface
         self.url = "https://chatgpt.com/"
+        self.date_folder = date_folder
 
     # Prep the dataframe by adding the columns that will store the scraped data
     def prep_data(self, df):
@@ -98,8 +94,8 @@ class ChatGPTScraper(BaseScraper):
         # Response_text is the response from the model
         # Response_citations is a JSON of the citations that the model cited in the response
         # Response_search_results is a JSON of the search results that the model cited in the response
-        # ? Screenshot_path is the path to the screenshot of the response
-        df[["prompt", "response_text", "response_citations", "response_search_results", "screenshot_path", "request_time"]] = None
+        # Screenshot_path is the path to the screenshot of the response
+        df[["id","prompt", "response_text", "response_citations", "response_search_results", "response_screenshot_path", "citation_screenshot_path", "request_time"]] = None
         return df
         
     # Query the ChatGPT model with a prompt
@@ -147,6 +143,10 @@ class ChatGPTScraper(BaseScraper):
         sleep(random.uniform(110, 130))
         
         try:
+            # Establish an ID for the row
+            row_id = str(uuid.uuid4())[:8]
+            row["id"] = row_id
+
             # Send the prompt to ChatGPT
             # Create prompt
             PROMPT = f'What does the internet say about {row["headline"]} in the past week. '
@@ -158,17 +158,17 @@ class ChatGPTScraper(BaseScraper):
 
             # Extract the response HTML
             row["response_text"] = self.parse_response()
+            pretty_html(row["response_text"])
 
-            # take a screenshot of the response area
-            self.driver.save_screenshot('response.png')
+            # Take a screenshot of the response
+            row["response_screenshot_path"] = self.take_screenshot(row_id, "response")
             
             # Open sources tab
             self.driver.uc_click("button.not-prose.group\\/footnote")
-            #self.driver.click("//div[text()='Sources']/parent::button", by="xpath")
             sleep(random.uniform(3, 5))
-            
-            # take a screen shot of the sources tab
-            self.driver.save_screenshot('sources.png')
+
+            # Take a screenshot of the sources
+            row["citation_screenshot_path"] = self.take_screenshot(row_id, "citations")
 
             # And then extract all of the source information broken into citations and search results
             try:
@@ -197,6 +197,17 @@ class ChatGPTScraper(BaseScraper):
 
         # return the response HTML as a string
         return response
+    
+    def take_screenshot(self, id, type):
+        # create path to the screenshot folder
+        image_name = f"{id}_{type}.png"
+        screenshot_path = os.path.join(self.date_folder, "screenshots", image_name)
+
+        # take a screenshot
+        self.driver.save_screenshot(screenshot_path)
+        
+        # return the path to the screenshot
+        return screenshot_path
     
     # this is a helper function to close the popups that appear on the page
     def get_rid_of_popup(self):
@@ -258,13 +269,9 @@ class ChatGPTScraper(BaseScraper):
             # wait for page to load/human interaction simulation
             sleep(random.uniform(20, 30))
             
-            # Find the email input field by its ID
+            # Find the email input field by its ID and input the email
             email_input = self.driver.find_element(By.CSS_SELECTOR, "input[name='email'][type='email']")
-
-            # Clear any existing text in the field
             email_input.clear()
-
-            # Type text into the field
             email_input.send_keys(email)
 
             # wait for page to load/human interaction simulation
@@ -279,13 +286,9 @@ class ChatGPTScraper(BaseScraper):
             # wait for page to load/human interaction simulation
             sleep(random.uniform(1, 3))
 
-            # Find the email input field by its ID
+            # Find the email input field by its ID and input the password
             password_input = self.driver.find_element(By.CSS_SELECTOR, "input[name='password'][type='password']")
-
-            # Clear any existing text in the field
             password_input.clear()
-
-            # Type text into the field
             password_input.send_keys(password)
 
             # wait for page to load/human interaction simulation
@@ -309,11 +312,14 @@ def ChatGPTScraperTest():
     # Create a test dataframe -- just need a column a headlines for the prompt pattern used here
     # What headlines will we use? -> We are using trending topics from Google Trends
     # Get trending topics from Google Trends
-    topics = get_google_trends_topics()
-    df = pd.DataFrame(topics, columns=["headline"])
+    topics = get_google_trends_topics()[0:1]
+    df = pd.DataFrame(topics, columns=["trending_topic"])
+
+    # Create a date folder to store the results
+    folder_path, date = create_date_folder()
 
     # Create a scraper instance
-    scraper = ChatGPTScraper()
+    scraper = ChatGPTScraper(folder_path)
 
     # Prep the dataframe by adding the columns that will store the scraped data
     df = scraper.prep_data(df)
@@ -327,7 +333,9 @@ def ChatGPTScraperTest():
     # Output the results to a CSV file with the new columns
     # ? Single csv vs multiple csvs?
     # ? What should the name be?
-    df.to_csv("test-scrape.csv", index=False)
+    csv_name = os.path.join(folder_path, f'{date}_scrape_results.csv')
+    print(f"Saving results to {csv_name}")
+    df.to_csv(csv_name, index=False)
 
 ChatGPTScraperTest()
 
