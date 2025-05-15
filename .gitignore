@@ -147,6 +147,9 @@ GPTscraper
 # mkdocs documentation
 /site
 
+# data
+/data
+
 # mypy
 .mypy_cache/
 .dmypy.json
