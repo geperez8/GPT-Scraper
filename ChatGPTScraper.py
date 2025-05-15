@@ -30,7 +30,7 @@ def initialize_logger(folder_path):
     global log
     
     # Create the log file
-    log_filename = f"scraper_log_{datetime.now().strftime('%m-%d-%y')}.log"
+    log_filename = f"{datetime.now().strftime('%m-%d-%y')}_scraper_log.log"
     log_path = os.path.join(folder_path, log_filename)
     timestamp = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
     first_line = f"===== SCRAPER RUN STARTED AT {timestamp} =====\n\n"
@@ -119,7 +119,7 @@ class BaseScraper:
             # Set headless=False for debug so you can see what's happening in the browser, or headless=True to run it on a server
             self.driver = Driver(uc=True, headless=False, no_sandbox=True)
             #self.driver.maximize_window()
-            self.driver.set_window_size(1400, 1400)
+            self.driver.set_window_size(1700, 1700)
             log("WebDriver initialized successfully", "INFO")
         except Exception as e:
             log(f"Failed to initialize WebDriver: {str(e)}", "ERROR")
@@ -182,7 +182,7 @@ class ChatGPTScraper(BaseScraper):
             log("Opening ChatGPT URL", "DEBUG")
             self.driver.uc_open(self.url)
             # wait for the page to load/human interaction simulation
-            sleep_time = random.uniform(1, 6)
+            sleep_time = random.uniform(4, 10)
             log(f"Waiting for {sleep_time:.2f}s for page to load", "DEBUG")
             sleep(sleep_time)
 
@@ -315,6 +315,10 @@ class ChatGPTScraper(BaseScraper):
             return ""
     
     def take_screenshot(self, id, type):
+        log(f"Cheking for pop up before screenshot", "INFO")
+        
+        self.get_rid_of_popup()
+
         log(f"Taking screenshot of type: {type} for ID: {id}", "DEBUG")
         try:
             # create path to the screenshot folder
@@ -333,15 +337,37 @@ class ChatGPTScraper(BaseScraper):
     
     # this is a helper function to close the popups that appear on the page
     def get_rid_of_popup(self):
-        log("Attempting to close popup", "DEBUG")
+        sleep_time = random.uniform(2, 6)
+        log(f"Waiting for popup, waiting {sleep_time:.2f}s", "DEBUG")
+        sleep(sleep_time)
+        log("Attempting to close popup with method 1", "DEBUG")
         # Close the popups that appear on the page
+        closed = False
         try:
-            self.driver.click("button[aria-label='Close']", by="css selector")
-            sleep_time = random.uniform(1, 2)
-            log(f"Popup closed, waiting {sleep_time:.2f}s", "DEBUG")
-            sleep(sleep_time)
+            element = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//div[normalize-space(text())='Stay logged out']"))
+            )
+            element.click()
+            log(f"Popup closed with method 1", "DEBUG")
         except Exception as e:
-            log(f"No popup found or couldn't close: {str(e)}", "DEBUG")
+            log(f"No popup found or couldn't close with method 1", "DEBUG")
+
+        if not closed:
+            log("Attempting to close popup with method 2", "DEBUG")
+            try:
+                stay_logged_out_link = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "//a[text()='Stay logged out']"))
+                )
+                stay_logged_out_link.click()
+                log(f"Popup closed with method 2", "DEBUG")
+            except Exception as e:
+                log(f"No popup found or couldn't close with method 2", "DEBUG")
+
+        if closed:
+            sleep_time = random.uniform(1, 2)
+            log(f"Now waiting {sleep_time:.2f}s after popup close", "DEBUG")
+            sleep(sleep_time)
+
 
     # Helper to extract the sources from the ChatGPT model
     def parse_sources(self, header_text):
